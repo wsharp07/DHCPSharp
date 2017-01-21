@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DHCPSharp.Service", "DHCPSharp.Service\DHCPSharp.Service.csproj", "{3947587E-2E9F-4FAE-A54A-5BAF33B90CEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DHCPSharp.UnitTests", "DHCPSharp.UnitTests\DHCPSharp.UnitTests.csproj", "{AF483650-2D22-402F-A751-0B07E4C3E9CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DHCPSharp.Common", "DHCPSharp.Common\DHCPSharp.Common.csproj", "{DA85CDA2-E289-4CE6-A470-6DB6990BA8A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DHCPSharp.DAL", "DHCPSharp.DAL\DHCPSharp.DAL.csproj", "{DF35CA06-06D0-47A7-89AF-AB6303DD98A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3947587E-2E9F-4FAE-A54A-5BAF33B90CEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3947587E-2E9F-4FAE-A54A-5BAF33B90CEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3947587E-2E9F-4FAE-A54A-5BAF33B90CEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3947587E-2E9F-4FAE-A54A-5BAF33B90CEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF483650-2D22-402F-A751-0B07E4C3E9CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF483650-2D22-402F-A751-0B07E4C3E9CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF483650-2D22-402F-A751-0B07E4C3E9CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF483650-2D22-402F-A751-0B07E4C3E9CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA85CDA2-E289-4CE6-A470-6DB6990BA8A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA85CDA2-E289-4CE6-A470-6DB6990BA8A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA85CDA2-E289-4CE6-A470-6DB6990BA8A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA85CDA2-E289-4CE6-A470-6DB6990BA8A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF35CA06-06D0-47A7-89AF-AB6303DD98A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF35CA06-06D0-47A7-89AF-AB6303DD98A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF35CA06-06D0-47A7-89AF-AB6303DD98A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF35CA06-06D0-47A7-89AF-AB6303DD98A5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

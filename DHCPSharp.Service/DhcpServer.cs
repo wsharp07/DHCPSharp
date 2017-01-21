@@ -152,12 +152,7 @@ namespace DHCPSharp
 
         private void ReceiveRequest(byte[] buffer, IPEndPoint remoteEndPoint)
         {
-            DhcpData dhcpData = new DhcpData(buffer)
-            {
-                BufferSize = buffer.Length,
-                Source = remoteEndPoint
-            };
-
+            DhcpData dhcpData = new DhcpData(remoteEndPoint, buffer);
             DhcpMessage dhcpMessage = ParseRequest(dhcpData, new DhcpPacketSerializer(), new DhcpMessageSerializer());
             HandleRequest(dhcpMessage);
         }

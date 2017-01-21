@@ -9,10 +9,8 @@ namespace DHCPSharp.Common
 {
     public class DhcpData
     {
-        public IPEndPoint Source { get; set; }
-        public byte[] MessageBuffer { get; private set; }
-        public int BufferSize { get; set; }
-        public IAsyncResult Result { get; set; }
+        public IPEndPoint Source { get; }
+        public byte[] MessageBuffer { get; }
         public DhcpData(byte[] messageBuffer)
         {
             MessageBuffer = messageBuffer;

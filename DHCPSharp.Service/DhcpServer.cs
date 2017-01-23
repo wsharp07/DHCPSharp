@@ -32,7 +32,6 @@ namespace DHCPSharp
         private readonly ILogger Log;
         private UdpClient _listener;
         private CancellationTokenSource _cancellation;
-        private LeaseCleanup _cleanupThread;
         private readonly SemaphoreSlim _requestLock;
         
         public NetworkInterface DhcpInterface { get; private set; }
@@ -49,11 +48,10 @@ namespace DHCPSharp
             _requestLock = new SemaphoreSlim(1);
         }
 
-        public async void Start()
+        public void Start()
         {
             Log.Info("DHCP Server is starting up...");
      
-            _cleanupThread = new LeaseCleanup(LeaseManager);
             DhcpInterface = GetNetworkInterface();
             DhcpInterfaceAddress = GetInterfaceAddress(DhcpInterface);
             StartListening(DhcpInterfaceAddress, DHCP_PORT);
@@ -197,28 +195,35 @@ namespace DHCPSharp
 
         private async Task DhcpRequest(DhcpMessage message)
         {
-            // Client specified an address they would like
-            if (message.Options.ContainsKey(DhcpOptionCode.RequestedIpAddress))
+            await _requestLock.WaitAsync().ConfigureAwait(false);
+            try
             {
-                await _requestLock.WaitAsync().ConfigureAwait(false);
-                await KeepAddressRequest(message).ConfigureAwait(false);
-            }
-            else
-            {
-                var clientAddress = message.ClientIPAddress;
-
-                if (clientAddress.Equals(IPAddress.Parse("0.0.0.0")))
+                // Client specified an address they would like
+                if (message.Options.ContainsKey(DhcpOptionCode.RequestedIpAddress))
                 {
-                    // A DHCP REQ should have an address
-                    throw new Exception("A DHCP Request must have an address specified");
+                    await KeepAddressRequest(message).ConfigureAwait(false);
                 }
+                else
+                {
+                    var clientAddress = message.ClientIPAddress;
 
-                await _requestLock.WaitAsync().ConfigureAwait(false);
-                await LeaseManager.AddLease(clientAddress, message.ClientHardwareAddress, message.HostName)
-                            .ConfigureAwait(false);
+                    if (clientAddress.Equals(IPAddress.Parse("0.0.0.0")))
+                    {
+                        // A DHCP REQ should have an address
+                        throw new Exception("A DHCP Request must have an address specified");
+                    }
 
-                await this.SendAck(message, clientAddress).ConfigureAwait(false);
+                    await LeaseManager.AddLease(clientAddress, message.ClientHardwareAddress, message.HostName)
+                                .ConfigureAwait(false);
+
+                    await this.SendAck(message, clientAddress).ConfigureAwait(false);
+                }
             }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message);
+            }
+            _requestLock.Release();
         }
 
         private async Task KeepAddressRequest(DhcpMessage message)

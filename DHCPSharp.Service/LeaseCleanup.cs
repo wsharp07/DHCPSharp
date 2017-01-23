@@ -13,7 +13,6 @@ namespace DHCPSharp
         private readonly ILeaseManager _manager;
         readonly CancellationTokenSource _cancellation;
 
-        //TODO: Check to make sure this runs
         public LeaseCleanup(ILeaseManager manager)
         {
             _manager = manager;

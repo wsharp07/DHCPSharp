@@ -147,6 +147,32 @@ namespace DHCPSharp.UnitTests
             Assert.False(keepLeaseResponse);
         }
 
+        [Fact]
+        public async void CleanupExpiredLease_Expect_NoExpiredLeases()
+        {
+            var leaseRepo = new LeaseRepo(_conn);
+            var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
+
+            var expiredLease = ModelFakes.GetFakeLease();
+            expiredLease.Expiration = DateTime.UtcNow.AddMinutes(-2);
+
+            var validLease = ModelFakes.GetFakeLease();
+            validLease.IpAddress = "10.10.10.11";
+            validLease.PhysicalAddress = "332211556677";
+            validLease.HostName = "boot22.local";
+
+            await leaseRepo.Insert(expiredLease);
+            await leaseRepo.Insert(validLease);
+
+            await leaseManager.CleanExpiredLeases();
+
+            var expiredEntity = await leaseRepo.GetByIpAddress(expiredLease.IpAddress);
+            var validEntity = await leaseRepo.GetByIpAddress(validLease.IpAddress);
+
+            Assert.Null(expiredEntity);
+            Assert.NotNull(validEntity);
+        }
+
         private void RemoveDb(string dbFilePath)
         {
             //File.Delete(dbFilePath);

@@ -19,7 +19,7 @@ namespace DHCPSharp.UnitTests
                 UpdatedAt = DateTime.Now,
                 IpAddress = "10.10.10.10",
                 Expiration = DateTime.Now.AddSeconds(86400),
-                PhysicalAddress = "00:00:00:00:00:00"
+                PhysicalAddress = "000000000000"
             };
         }
         public static Lease GetFakeLease(string ipAddress)

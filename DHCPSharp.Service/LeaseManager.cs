@@ -21,6 +21,7 @@ namespace DHCPSharp
         Task AddLease(IPAddress ipAddress, PhysicalAddress physicalAddress, string hostName);
         Task<bool> KeepLeaseRequest(IPAddress ipAddress, PhysicalAddress physicalAddress, string hostName);
         Task RemoveLease(IPAddress ipAddress);
+        Task CleanExpiredLeases();
     }
     public class LeaseManager : ILeaseManager
     {
@@ -38,8 +39,8 @@ namespace DHCPSharp
 
             if (leaseCount > 0)
             {
-                var lastReservation = await GetLastLease();
-                var nextIpAddress = lastReservation.ToNextIpAddress();
+                var leaseLease = await GetLastLease();
+                var nextIpAddress = leaseLease.ToNextIpAddress();
                 return nextIpAddress;
             }
             return _configuration.StartIpAddress;
@@ -102,8 +103,21 @@ namespace DHCPSharp
 
         public async Task RemoveLease(IPAddress ipAddress)
         {
-            var reservation = await _leaseRepo.GetByIpAddress(ipAddress);
-            await _leaseRepo.Delete(reservation);
+            var lease = await _leaseRepo.GetByIpAddress(ipAddress);
+            await _leaseRepo.Delete(lease);
+        }
+
+        public async Task CleanExpiredLeases()
+        {
+            var expiredLeases = await _leaseRepo
+                                        .AsQueryable()
+                                        .Where(x => x.Expiration <= DateTime.UtcNow)
+                                        .ToListAsync();
+
+            foreach(var lease in expiredLeases)
+            {
+                await _leaseRepo.Delete(lease);
+            }
         }
     }
 }

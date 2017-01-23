@@ -33,6 +33,7 @@ namespace DHCPSharp
         private readonly ILogger Log;
         private UdpClient _listener;
         private CancellationTokenSource _cancellation;
+        private LeaseCleanupThread _cleanupThread;
         
         private readonly SQLiteAsyncConnection _conn;
 
@@ -54,6 +55,7 @@ namespace DHCPSharp
 
             await CreateTables();       
             LeaseManager = new LeaseManager(Configuration, new LeaseRepo(_conn));
+            _cleanupThread = new LeaseCleanupThread(LeaseManager);
             DhcpInterface = GetNetworkInterface();
             DhcpInterfaceAddress = GetInterfaceAddress(DhcpInterface);
             StartListening(DhcpInterfaceAddress, DHCP_PORT);
@@ -65,6 +67,7 @@ namespace DHCPSharp
             _cancellation.Cancel();
             _listener.Close();
             _listener = null;
+            _cleanupThread.Stop();
         }
 
         private DhcpConfiguration GetConfiguration()

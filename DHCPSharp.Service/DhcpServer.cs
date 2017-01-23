@@ -28,7 +28,6 @@ namespace DHCPSharp
         // Constants
         private const int DHCP_PORT = 67;
         private const int DHCP_CLIENT_PORT = 68;
-        private readonly IPAddress IP_ADDRESS_BROADCAST = IPAddress.Parse("255.255.255.255");
 
         private readonly ILogger Log;
         private UdpClient _listener;
@@ -53,7 +52,7 @@ namespace DHCPSharp
         {
             Log.Info("DHCP Server is starting up...");
 
-            await CreateTables();       
+            await CreateTables().ConfigureAwait(false);       
             LeaseManager = new LeaseManager(Configuration, new LeaseRepo(_conn));
             _cleanupThread = new LeaseCleanupThread(LeaseManager);
             DhcpInterface = GetNetworkInterface();
@@ -220,7 +219,7 @@ namespace DHCPSharp
             }
             else
             {
-                addressRequest = await LeaseManager.GetNextLease();
+                addressRequest = await LeaseManager.GetNextLease().ConfigureAwait(false);
             }
 
             this.SendOffer(message, addressRequest);
@@ -295,7 +294,7 @@ namespace DHCPSharp
             this.SendReply(packet);
                  
 
-            Log.Debug($"[OFFER] IP Address '{offerAddress}' was sent over '{IP_ADDRESS_BROADCAST}'");
+            Log.Debug($"[OFFER] IP Address '{offerAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
         private void SendAck(DhcpMessage message, IPAddress clientAddress)
@@ -318,7 +317,7 @@ namespace DHCPSharp
 
             this.SendReply(packet);
 
-            Log.Debug($"[ACK] IP Address '{clientAddress}' was sent over '{IP_ADDRESS_BROADCAST}'");
+            Log.Debug($"[ACK] IP Address '{clientAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
         private void SendNak(DhcpMessage message, IPAddress requestedAddress)
@@ -337,7 +336,7 @@ namespace DHCPSharp
 
             this.SendReply(packet);
 
-            Log.Debug($"[NAK] IP Address '{requestedAddress}' was sent over '{IP_ADDRESS_BROADCAST}'");
+            Log.Debug($"[NAK] IP Address '{requestedAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
         private async void SendReply(DhcpPacket packet)
@@ -364,7 +363,7 @@ namespace DHCPSharp
 
         private async Task CreateTables()
         {
-            await _conn.CreateTableAsync<Lease>();
+            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
         }
     }
 }

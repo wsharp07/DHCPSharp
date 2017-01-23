@@ -35,11 +35,11 @@ namespace DHCPSharp
         }
         public async Task<IPAddress> GetNextLease()
         {
-            var leaseCount = await _leaseRepo.AsQueryable().CountAsync();
+            var leaseCount = await _leaseRepo.AsQueryable().CountAsync().ConfigureAwait(false);
 
             if (leaseCount > 0)
             {
-                var leaseLease = await GetLastLease();
+                var leaseLease = await GetLastLease().ConfigureAwait(false);
                 var nextIpAddress = leaseLease.ToNextIpAddress();
                 return nextIpAddress;
             }
@@ -48,7 +48,7 @@ namespace DHCPSharp
 
         public async Task<IPAddress> GetLastLease()
         {
-            var lastLease = await _leaseRepo.AsQueryable().OrderByDescending(x => x.InsertedAt).FirstAsync();
+            var lastLease = await _leaseRepo.AsQueryable().OrderByDescending(x => x.InsertedAt).FirstAsync().ConfigureAwait(false);
             return IPAddress.Parse(lastLease.IpAddress);
         }
 
@@ -67,24 +67,24 @@ namespace DHCPSharp
 
         public async Task<bool> KeepLeaseRequest(IPAddress ipAddress, PhysicalAddress physicalAddress, string hostName)
         {
-            var lease = await _leaseRepo.GetByIpAddress(ipAddress);
+            var lease = await _leaseRepo.GetByIpAddress(ipAddress).ConfigureAwait(false);
 
             if (lease == null)
             {
-                lease = await _leaseRepo.GetByPhysicalAddress(physicalAddress);
+                lease = await _leaseRepo.GetByPhysicalAddress(physicalAddress).ConfigureAwait(false);
 
                 if(lease == null)
                 {
-                    await AddLease(ipAddress, physicalAddress, hostName);
+                    await AddLease(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
                     return true;
                 }
-                await UpdateLease(lease, ipAddress, physicalAddress, hostName);
+                await UpdateLease(lease, ipAddress, physicalAddress, hostName).ConfigureAwait(false);
                 return true;
             }
 
             if (lease.PhysicalAddress.Equals(physicalAddress.ToString()))
             {
-                await UpdateLease(lease, ipAddress, physicalAddress, hostName);
+                await UpdateLease(lease, ipAddress, physicalAddress, hostName).ConfigureAwait(false);
                 return true;
             }
 
@@ -98,13 +98,13 @@ namespace DHCPSharp
             lease.HostName = hostName;
             lease.Expiration = DateTime.UtcNow.AddSeconds(_configuration.LeaseTimeSeconds);
             lease.UpdatedAt = DateTime.UtcNow;
-            await _leaseRepo.Update(lease);
+            await _leaseRepo.Update(lease).ConfigureAwait(false);
         }
 
         public async Task RemoveLease(IPAddress ipAddress)
         {
             var lease = await _leaseRepo.GetByIpAddress(ipAddress);
-            await _leaseRepo.Delete(lease);
+            await _leaseRepo.Delete(lease).ConfigureAwait(false);
         }
 
         public async Task CleanExpiredLeases()
@@ -116,7 +116,7 @@ namespace DHCPSharp
 
             foreach(var lease in expiredLeases)
             {
-                await _leaseRepo.Delete(lease);
+                await _leaseRepo.Delete(lease).ConfigureAwait(false);
             }
         }
     }

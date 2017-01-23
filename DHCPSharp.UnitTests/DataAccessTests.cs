@@ -36,8 +36,8 @@ namespace DHCPSharp.UnitTests
                 Expiration = DateTime.Now.AddSeconds(86400)
             };
 
-            var id = await repo.Insert(lease);
-            var entity = await repo.GetByIpAddress(ipAddress);
+            var id = await repo.Insert(lease).ConfigureAwait(false);
+            var entity = await repo.GetByIpAddress(ipAddress).ConfigureAwait(false);
 
             Assert.Equal(id, entity.Id);
         }
@@ -56,8 +56,8 @@ namespace DHCPSharp.UnitTests
                 Expiration = DateTime.Now.AddSeconds(86400)
             };
 
-            var id = await repo.Insert(lease);
-            var entity = await repo.GetByPhysicalAddress(lease.PhysicalAddress);
+            var id = await repo.Insert(lease).ConfigureAwait(false);
+            var entity = await repo.GetByPhysicalAddress(lease.PhysicalAddress).ConfigureAwait(false);
 
             Assert.Equal(lease.PhysicalAddress, entity.PhysicalAddress);
         }
@@ -71,16 +71,16 @@ namespace DHCPSharp.UnitTests
 
             var repo = new LeaseRepo(_conn);
             var lease = ModelFakes.GetFakeLease();
-            var id = await repo.Insert(lease);
+            var id = await repo.Insert(lease).ConfigureAwait(false);
 
-            var entity = await repo.Get(id);
+            var entity = await repo.Get(id).ConfigureAwait(false);
             entity.HostName = newHostName;
             entity.IpAddress = newIpAddress;
             entity.PhysicalAddress = newPhysicalAddress;
 
-            await repo.Update(entity);
+            await repo.Update(entity).ConfigureAwait(false);
 
-            entity = await repo.Get(id);
+            entity = await repo.Get(id).ConfigureAwait(false);
 
             Assert.Equal(newIpAddress, entity.IpAddress);
             Assert.Equal(newHostName, entity.HostName);
@@ -94,7 +94,7 @@ namespace DHCPSharp.UnitTests
 
         private async void CreateTables()
         {
-            await _conn.CreateTableAsync<Lease>();
+            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
         }
     }
 }

@@ -20,22 +20,22 @@ namespace DHCPSharp.DAL.Repository
         }
         public async Task<Lease> GetByIpAddress(IPAddress ipAddress)
         {
-            return await GetByIpAddress(ipAddress.ToString());
+            return await GetByIpAddress(ipAddress.ToString()).ConfigureAwait(false);
         }
 
         public async Task<Lease> GetByIpAddress(string ipAddress)
         {
-            return await Get(x => x.IpAddress == ipAddress);
+            return await Get(x => x.IpAddress == ipAddress).ConfigureAwait(false);
         }
 
         public async Task<Lease> GetByPhysicalAddress(PhysicalAddress physicalAddress)
         {
-            return await GetByPhysicalAddress(physicalAddress.ToString());
+            return await GetByPhysicalAddress(physicalAddress.ToString()).ConfigureAwait(false);
         }
 
         public async Task<Lease> GetByPhysicalAddress(string physicalAddress)
         {
-            return await Get(x => x.PhysicalAddress == physicalAddress);
+            return await Get(x => x.PhysicalAddress == physicalAddress).ConfigureAwait(false);
         }
 
         

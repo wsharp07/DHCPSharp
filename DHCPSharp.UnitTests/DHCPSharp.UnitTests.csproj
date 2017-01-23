@@ -97,6 +97,7 @@
     <Compile Include="ModelFakes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="LeaseManagerTests.cs" />
+    <Compile Include="SQLiteTestConfig.cs" />
     <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>

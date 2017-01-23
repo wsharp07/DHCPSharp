@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using DHCPSharp.Properties;
 
 namespace DHCPSharp.Common
 {
@@ -26,5 +27,8 @@ namespace DHCPSharp.Common
         public IPAddress BindIp { get; set; }
         public TimeSpan LeaseTime { get; set; }
         public int LeaseTimeSeconds => (int)LeaseTime.TotalSeconds;
+
     }
+
+    
 }

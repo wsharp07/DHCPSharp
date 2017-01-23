@@ -40,7 +40,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DhcpConfiguration.cs" />
     <Compile Include="Extensions\DhcpPacketExtensions.cs" />
     <Compile Include="Serialization\DhcpMessageSerializer.cs" />
     <Compile Include="Serialization\DhcpPacketSerializer.cs" />

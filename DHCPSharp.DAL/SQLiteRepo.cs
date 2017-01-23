@@ -10,11 +10,11 @@ namespace DHCPSharp.DAL
 {
     public class SQLiteRepo<T> : IRepo<T> where T: class,new()
     {
-        private SQLiteAsyncConnection db;
+        private readonly SQLiteAsyncConnection db;
 
-        public SQLiteRepo(SQLiteAsyncConnection db)
+        public SQLiteRepo(IDbConfiguration config)
         {
-            this.db = db;
+            this.db = new SQLiteAsyncConnection(config.ConnectionString);
         }
 
         public AsyncTableQuery<T> AsQueryable() =>

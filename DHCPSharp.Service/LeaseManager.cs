@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using DHCPSharp.Common;
 using DHCPSharp.DAL.Repository;
@@ -28,11 +29,12 @@ namespace DHCPSharp
         readonly ILeaseRepo _leaseRepo;
         readonly IDhcpConfiguration _configuration;
  
-        public LeaseManager(IDhcpConfiguration configuration, ILeaseRepo leaseRepo)
+        public LeaseManager(IDhcpConfiguration configuration, ILeaseRepo repo)
         {
-            _leaseRepo = leaseRepo;
+            _leaseRepo = repo;
             _configuration = configuration;
         }
+
         public async Task<IPAddress> GetNextLease()
         {
             var leaseCount = await _leaseRepo.AsQueryable().CountAsync().ConfigureAwait(false);

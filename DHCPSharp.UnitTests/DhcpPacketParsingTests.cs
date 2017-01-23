@@ -5,7 +5,6 @@ using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
 using DHCPSharp.Common;
-using DHCPSharp.Common;
 using DHCPSharp.Common.Enums;
 using DHCPSharp.Common.Serialization;
 using Xunit;

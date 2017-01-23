@@ -17,19 +17,17 @@ namespace DHCPSharp.UnitTests
 {
     public class LeaseManagerTests : IDisposable
     {
-        readonly SQLiteAsyncConnection _conn;
-        readonly string DbFilePath;
+        readonly IDbConfiguration DbConfig;
         public LeaseManagerTests()
         {
-            DbFilePath = TestHelpers.GetRandomDb();
-            _conn = new SQLiteAsyncConnection(DbFilePath);
+            DbConfig = new SQLiteTestConfig();
 
             CreateTables();
         }
 
         public void Dispose()
         {
-            RemoveDb(DbFilePath);
+            RemoveDb(DbConfig);
         }
 
         [Fact]
@@ -37,7 +35,7 @@ namespace DHCPSharp.UnitTests
         {
             var config = DhcpFakes.FakeDhcpConfiguration();
             var nextIp = config.StartIpAddress.ToNextIpAddress();
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var lease = ModelFakes.GetFakeLease(config.StartIpAddress.ToString());
@@ -52,7 +50,7 @@ namespace DHCPSharp.UnitTests
         public async void NoLeases_Expect_NextLeaseToBeStartIpAddress()
         {
             var config = DhcpFakes.FakeDhcpConfiguration();
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(config, leaseRepo);
 
             var nextLease = await leaseManager.GetNextLease().ConfigureAwait(false);
@@ -63,7 +61,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void AddLease_Expect_LeaseInDb()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var ipAddress = IPAddress.Parse("10.10.10.10");
@@ -82,7 +80,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void RemoveLease_Expect_NoLeaseInDb()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var ipAddress = IPAddress.Parse("10.10.10.10");
@@ -100,7 +98,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void KeepLeaseWithMatch_Expect_RequestAccepted()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
             
             var ipAddress = IPAddress.Parse("10.10.10.10");
@@ -117,7 +115,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void KeepLeaseWithNoMatch_Expect_RequestAccepted()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var ipAddress = IPAddress.Parse("10.10.10.10");
@@ -132,7 +130,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void KeepLeaseWithMatch_WrongMAC_Expect_RequestRejected()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var ipAddress = IPAddress.Parse("10.10.10.10");
@@ -150,7 +148,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void CleanupExpiredLease_Expect_NoExpiredLeases()
         {
-            var leaseRepo = new LeaseRepo(_conn);
+            var leaseRepo = new LeaseRepo(DbConfig);
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var expiredLease = ModelFakes.GetFakeLease();
@@ -173,14 +171,15 @@ namespace DHCPSharp.UnitTests
             Assert.NotNull(validEntity);
         }
 
-        private void RemoveDb(string dbFilePath)
+        private void RemoveDb(IDbConfiguration config)
         {
             //File.Delete(dbFilePath);
         }
 
-        private async void CreateTables()
+        private void CreateTables()
         {
-            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
+            var conn = new SQLiteConnection(DbConfig.ConnectionString);
+            conn.CreateTable<Lease>();
         }
     }
 }

@@ -13,10 +13,8 @@ namespace DHCPSharp.DAL.Repository
 {
     public class LeaseRepo : SQLiteRepo<Lease>, ILeaseRepo
     {
-        private readonly SQLiteAsyncConnection _db;
-        public LeaseRepo(SQLiteAsyncConnection db) : base(db)
+        public LeaseRepo(IDbConfiguration config) : base(config)
         {
-            _db = db;
         }
         public async Task<Lease> GetByIpAddress(IPAddress ipAddress)
         {

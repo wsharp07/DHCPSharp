@@ -70,7 +70,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DbHelpers.cs" />
+    <Compile Include="DbConfiguration.cs" />
     <Compile Include="Extensions\SQLiteConnectionExtensions.cs" />
     <Compile Include="IRepo.cs" />
     <Compile Include="ITimeStampModel.cs" />

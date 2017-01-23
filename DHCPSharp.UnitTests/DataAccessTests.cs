@@ -14,18 +14,17 @@ namespace DHCPSharp.UnitTests
 {
     public class DataAccessTests
     {
-        readonly SQLiteAsyncConnection _conn;
+        readonly IDbConfiguration DbConfig;
         public DataAccessTests()
         {
-            RemoveDb();
-            _conn = new SQLiteAsyncConnection(TestHelpers.GetRandomDb());
+            DbConfig = new SQLiteTestConfig();
             CreateTables();
         }
 
         [Fact]
         public async void InsertLease_Expect_RetrieveByIpAddress()
         {
-            var repo = new LeaseRepo(_conn);
+            var repo = new LeaseRepo(DbConfig);
             var ipAddress = "10.10.10.10";
 
             var lease = new Lease
@@ -45,7 +44,7 @@ namespace DHCPSharp.UnitTests
         [Fact]
         public async void InsertLease_Expect_RetrieveByPhysicalAddress()
         {
-            var repo = new LeaseRepo(_conn);
+            var repo = new LeaseRepo(DbConfig);
             var ipAddress = "10.10.10.10";
 
             var lease = new Lease
@@ -69,7 +68,7 @@ namespace DHCPSharp.UnitTests
             var newIpAddress = "192.168.8.11";
             var newPhysicalAddress = "0012345678";
 
-            var repo = new LeaseRepo(_conn);
+            var repo = new LeaseRepo(DbConfig);
             var lease = ModelFakes.GetFakeLease();
             var id = await repo.Insert(lease).ConfigureAwait(false);
 
@@ -87,14 +86,10 @@ namespace DHCPSharp.UnitTests
             Assert.Equal(newPhysicalAddress, entity.PhysicalAddress);
         }
 
-        private void RemoveDb()
-        {
-            File.Delete(DbHelpers.DbFile);
-        }
-
         private async void CreateTables()
         {
-            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
+            var conn = new SQLiteAsyncConnection(DbConfig.ConnectionString);
+            await conn.CreateTableAsync<Lease>().ConfigureAwait(false);
         }
     }
 }

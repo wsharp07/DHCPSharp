@@ -32,29 +32,28 @@ namespace DHCPSharp
         private readonly ILogger Log;
         private UdpClient _listener;
         private CancellationTokenSource _cancellation;
-        private LeaseCleanupThread _cleanupThread;
+        private LeaseCleanup _cleanupThread;
+        private readonly SemaphoreSlim _requestLock;
         
-        private readonly SQLiteAsyncConnection _conn;
-
         public NetworkInterface DhcpInterface { get; private set; }
         public IPAddress DhcpInterfaceAddress { get; private set; }
         public IDhcpConfiguration Configuration { get; }
-        public ILeaseManager LeaseManager { get; private set; }
+        public ILeaseManager LeaseManager { get; }
 
-        public DhcpServer(ILogger logger)
+        public DhcpServer(ILogger logger, ILeaseManager leaseManager, IDhcpConfiguration configuration)
         {
-            _conn = new SQLiteAsyncConnection(DbHelpers.DbFile);
             Log = logger;
-            Configuration = GetConfiguration();
+            Configuration = configuration;
+            LeaseManager = leaseManager;
+                      
+            _requestLock = new SemaphoreSlim(1);
         }
 
         public async void Start()
         {
             Log.Info("DHCP Server is starting up...");
-
-            await CreateTables().ConfigureAwait(false);       
-            LeaseManager = new LeaseManager(Configuration, new LeaseRepo(_conn));
-            _cleanupThread = new LeaseCleanupThread(LeaseManager);
+     
+            _cleanupThread = new LeaseCleanup(LeaseManager);
             DhcpInterface = GetNetworkInterface();
             DhcpInterfaceAddress = GetInterfaceAddress(DhcpInterface);
             StartListening(DhcpInterfaceAddress, DHCP_PORT);
@@ -66,34 +65,6 @@ namespace DHCPSharp
             _cancellation.Cancel();
             _listener.Close();
             _listener = null;
-            _cleanupThread.Stop();
-        }
-
-        private DhcpConfiguration GetConfiguration()
-        {
-
-            var gateway = Settings.Default.GatewayIpAddress;
-            int leaseTime = Settings.Default.LeaseTimeSeconds;
-
-            var leaseTimeSpan = leaseTime == 0 
-                ? TimeSpan.FromSeconds(uint.MaxValue) 
-                : TimeSpan.FromSeconds(leaseTime);
-            var subnet = Settings.Default.SubnetIpAddress;
-            var bindIp = Settings.Default.BindIpAddress;
-            var startIp = Settings.Default.StartIpAddress;
-            var endIp = Settings.Default.EndIpAddress;
-
-            var config = new DhcpConfiguration()
-            {
-                Gateway = IPAddress.Parse(gateway),
-                LeaseTime = leaseTimeSpan,
-                SubnetMask = IPAddress.Parse(subnet),
-                BindIp = IPAddress.Parse(bindIp),
-                StartIpAddress = IPAddress.Parse(startIp),
-                EndIpAddress = IPAddress.Parse(endIp)
-            };
-
-            return config;
         }
         private NetworkInterface GetNetworkInterface()
         {
@@ -144,7 +115,7 @@ namespace DHCPSharp
                     {
                         try
                         {
-                            ReceiveRequest(rsp.Buffer, rsp.RemoteEndPoint);
+                            await ReceiveRequest(rsp.Buffer, rsp.RemoteEndPoint).ConfigureAwait(false);
                         }
                         catch
                         {
@@ -152,6 +123,7 @@ namespace DHCPSharp
                         }
                     }
                 }
+                catch (ObjectDisposedException) { return; }
                 catch
                 {
                     //TODO: Possibly notify the user that Receive failed? This could be a SocketException.
@@ -159,11 +131,11 @@ namespace DHCPSharp
             }
         }
 
-        private void ReceiveRequest(byte[] buffer, IPEndPoint remoteEndPoint)
+        private async Task ReceiveRequest(byte[] buffer, IPEndPoint remoteEndPoint)
         {
             DhcpData dhcpData = new DhcpData(remoteEndPoint, buffer);
             DhcpMessage dhcpMessage = ParseRequest(dhcpData, new DhcpPacketSerializer(), new DhcpMessageSerializer());
-            HandleRequest(dhcpMessage);
+            await HandleRequest(dhcpMessage).ConfigureAwait(false);
         }
 
         private DhcpMessage ParseRequest(DhcpData dhcpData, IDhcpPacketSerializer pSerializer, IDhcpMessageSerializer mSerializer)
@@ -184,7 +156,7 @@ namespace DHCPSharp
             return message;
         }
         
-        private void HandleRequest(DhcpMessage message)
+        private async Task HandleRequest(DhcpMessage message)
         {
             if (message.OperationCode == DhcpOperation.BootRequest)
             {
@@ -192,12 +164,12 @@ namespace DHCPSharp
                 {
                     case DhcpMessageType.Discover:
                         Log.Debug($"[DISCOVER] Message Received From '{message.HostName}'");
-                        this.DhcpDiscover(message);
+                        await this.DhcpDiscover(message).ConfigureAwait(false);
                         Log.Debug("[DISCOVER] Message Processed.");
                         break;
                     case DhcpMessageType.Request:
                         Log.Debug($"[REQUEST] Message Received From '{message.HostName}'");
-                        this.DhcpRequest(message);
+                        await this.DhcpRequest(message).ConfigureAwait(false);
                         Log.Debug("[REQUEST] Message Processed.");
                         break;
                     case DhcpMessageType.Unknown:
@@ -214,30 +186,22 @@ namespace DHCPSharp
             }
         }
 
-        private async void DhcpDiscover(DhcpMessage message)
+        private async Task DhcpDiscover(DhcpMessage message)
         {
-            IPAddress addressRequest;
+            var addressRequest = await LeaseManager.GetNextLease()
+                .ConfigureAwait(false);
 
-            // Client specified an address they would like
-            if (message.Options.ContainsKey(DhcpOptionCode.RequestedIpAddress))
-            {
-                var addressRequestData = message.Options[DhcpOptionCode.RequestedIpAddress];
-                addressRequest = new IPAddress(addressRequestData);
-            }
-            else
-            {
-                addressRequest = await LeaseManager.GetNextLease().ConfigureAwait(false);
-            }
-
-            this.SendOffer(message, addressRequest);
+            await this.SendOffer(message, addressRequest)
+                .ConfigureAwait(false);
         }
 
-        private void DhcpRequest(DhcpMessage message)
+        private async Task DhcpRequest(DhcpMessage message)
         {
             // Client specified an address they would like
             if (message.Options.ContainsKey(DhcpOptionCode.RequestedIpAddress))
             {
-                KeepAddressRequest(message);
+                await _requestLock.WaitAsync().ConfigureAwait(false);
+                await KeepAddressRequest(message).ConfigureAwait(false);
             }
             else
             {
@@ -249,13 +213,15 @@ namespace DHCPSharp
                     throw new Exception("A DHCP Request must have an address specified");
                 }
 
-                LeaseManager.AddLease(clientAddress, message.ClientHardwareAddress, message.HostName);
+                await _requestLock.WaitAsync().ConfigureAwait(false);
+                await LeaseManager.AddLease(clientAddress, message.ClientHardwareAddress, message.HostName)
+                            .ConfigureAwait(false);
 
-                this.SendAck(message, clientAddress);
+                await this.SendAck(message, clientAddress).ConfigureAwait(false);
             }
         }
 
-        private async void KeepAddressRequest(DhcpMessage message)
+        private async Task KeepAddressRequest(DhcpMessage message)
         {
             var addressRequestData = message.Options[DhcpOptionCode.RequestedIpAddress];
             var addressRequest = new IPAddress(addressRequestData);
@@ -264,23 +230,23 @@ namespace DHCPSharp
             if (addressRequest.IsInSameSubnet(Configuration.StartIpAddress, Configuration.SubnetMask) == false)
             {
                 Log.Debug($"[REQUEST] {message.ClientHardwareAddress} request for '{addressRequest}' has been DENIED due to subnet mismatch");
-                this.SendNak(message, addressRequest);
+                await this.SendNak(message, addressRequest).ConfigureAwait(false);
                 return;
             }
 
             var keepReservationResponse = await LeaseManager.KeepLeaseRequest(addressRequest, message.ClientHardwareAddress, message.HostName);
             if (keepReservationResponse)
             {
-                this.SendAck(message, addressRequest);
+                await this.SendAck(message, addressRequest).ConfigureAwait(false);
                 Log.Debug($"[REQUEST] {message.ClientHardwareAddress} has been approved!");
                 return;
             }
 
-            this.SendNak(message, addressRequest);
+            await this.SendNak(message, addressRequest).ConfigureAwait(false);
             Log.Debug($"[REQUEST] {message.ClientHardwareAddress} has been DENIED.");
         }
 
-        private void SendOffer(DhcpMessage message, IPAddress offerAddress)
+        private async Task SendOffer(DhcpMessage message, IPAddress offerAddress)
         {
             Log.Debug($"[OFFER] Creating the offer");
 
@@ -298,13 +264,13 @@ namespace DHCPSharp
             var s = new DhcpMessageSerializer();
             var packet = s.ToPacket(message, optionBuilder.GetBytes());
 
-            this.SendReply(packet);
+            await this.SendReply(packet).ConfigureAwait(false);
                  
 
             Log.Debug($"[OFFER] IP Address '{offerAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
-        private void SendAck(DhcpMessage message, IPAddress clientAddress)
+        private async Task SendAck(DhcpMessage message, IPAddress clientAddress)
         {
             Log.Debug($"[ACK] Creating the acknowledgement");
 
@@ -322,12 +288,12 @@ namespace DHCPSharp
             var s = new DhcpMessageSerializer();
             var packet = s.ToPacket(message, optionBuilder.GetBytes());
 
-            this.SendReply(packet);
+            await this.SendReply(packet).ConfigureAwait(false);
 
             Log.Debug($"[ACK] IP Address '{clientAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
-        private void SendNak(DhcpMessage message, IPAddress requestedAddress)
+        private async Task SendNak(DhcpMessage message, IPAddress requestedAddress)
         {
             Log.Debug("[NAK] Creating the negative acknowledgement");
 
@@ -341,12 +307,12 @@ namespace DHCPSharp
             var s = new DhcpMessageSerializer();
             var packet = s.ToPacket(message, optionBuilder.GetBytes());
 
-            this.SendReply(packet);
+            await this.SendReply(packet).ConfigureAwait(false);
 
             Log.Debug($"[NAK] IP Address '{requestedAddress}' was sent over '{IPAddress.Broadcast}'");
         }
 
-        private async void SendReply(DhcpPacket packet)
+        private async Task SendReply(DhcpPacket packet)
         {
             try
             {
@@ -366,11 +332,6 @@ namespace DHCPSharp
                 Log.Error($"Error sending Dhcp reply: {ex.Message}");
                 throw;
             }
-        }
-
-        private async Task CreateTables()
-        {
-            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
         }
     }
 }

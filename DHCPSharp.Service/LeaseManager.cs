@@ -78,27 +78,27 @@ namespace DHCPSharp
                     await AddLease(ipAddress, physicalAddress, hostName);
                     return true;
                 }
-                UpdateLease(lease, ipAddress, physicalAddress, hostName);
+                await UpdateLease(lease, ipAddress, physicalAddress, hostName);
                 return true;
             }
 
             if (lease.PhysicalAddress.Equals(physicalAddress.ToString()))
             {
-                UpdateLease(lease, ipAddress, physicalAddress, hostName);
+                await UpdateLease(lease, ipAddress, physicalAddress, hostName);
                 return true;
             }
 
             return false;
         }
 
-        private void UpdateLease(Lease lease, IPAddress ipAddress, PhysicalAddress physicalAddress, string hostName)
+        private async Task UpdateLease(Lease lease, IPAddress ipAddress, PhysicalAddress physicalAddress, string hostName)
         {
             lease.IpAddress = ipAddress.ToString();
             lease.PhysicalAddress = physicalAddress.ToString();
             lease.HostName = hostName;
             lease.Expiration = DateTime.UtcNow.AddSeconds(_configuration.LeaseTimeSeconds);
             lease.UpdatedAt = DateTime.UtcNow;
-            _leaseRepo.Update(lease);
+            await _leaseRepo.Update(lease);
         }
 
         public async Task RemoveLease(IPAddress ipAddress)

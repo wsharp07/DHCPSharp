@@ -133,22 +133,29 @@ namespace DHCPSharp
 
         private async void ReceiveLoop(CancellationToken token)
         {
-            try
+            while (!token.IsCancellationRequested)
             {
-                while (!token.IsCancellationRequested)
+                try
                 {
                     var rsp = await _listener.ReceiveAsync()
-                        .ConfigureAwait(false);
+                    .ConfigureAwait(false);
 
                     if (rsp.Buffer.Length > 0)
                     {
-                        ReceiveRequest(rsp.Buffer, rsp.RemoteEndPoint);
+                        try
+                        {
+                            ReceiveRequest(rsp.Buffer, rsp.RemoteEndPoint);
+                        }
+                        catch
+                        {
+                            //TODO: Offer a way to handle that deserialization failed in some way unexpectedly, or notify the user
+                        }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                throw;
+                catch
+                {
+                    //TODO: Possibly notify the user that Receive failed? This could be a SocketException.
+                }
             }
         }
 

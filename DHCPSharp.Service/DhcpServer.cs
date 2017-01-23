@@ -38,12 +38,17 @@ namespace DHCPSharp
         public IPAddress DhcpInterfaceAddress { get; private set; }
         public IDhcpConfiguration Configuration { get; }
         public ILeaseManager LeaseManager { get; }
+        public IDhcpMessageSerializer MessageSerializer { get; }
+        public IDhcpPacketSerializer PacketSerializer { get; }
 
-        public DhcpServer(ILogger logger, ILeaseManager leaseManager, IDhcpConfiguration configuration)
+        public DhcpServer(ILogger logger, ILeaseManager leaseManager, IDhcpConfiguration configuration, 
+            IDhcpMessageSerializer messageSerializer, IDhcpPacketSerializer packetSeralizer)
         {
             Log = logger;
             Configuration = configuration;
             LeaseManager = leaseManager;
+            MessageSerializer = messageSerializer;
+            PacketSerializer = packetSeralizer;
                       
             _requestLock = new SemaphoreSlim(1);
         }
@@ -132,7 +137,7 @@ namespace DHCPSharp
         private async Task ReceiveRequest(byte[] buffer, IPEndPoint remoteEndPoint)
         {
             DhcpData dhcpData = new DhcpData(remoteEndPoint, buffer);
-            DhcpMessage dhcpMessage = ParseRequest(dhcpData, new DhcpPacketSerializer(), new DhcpMessageSerializer());
+            DhcpMessage dhcpMessage = ParseRequest(dhcpData, PacketSerializer, MessageSerializer);
             await HandleRequest(dhcpMessage).ConfigureAwait(false);
         }
 
@@ -266,8 +271,7 @@ namespace DHCPSharp
             optionBuilder.AddOption(DhcpOptionCode.Router, Configuration.Gateway);
             optionBuilder.AddOption(DhcpOptionCode.AddressTime, Configuration.LeaseTimeSeconds, true);
 
-            var s = new DhcpMessageSerializer();
-            var packet = s.ToPacket(message, optionBuilder.GetBytes());
+            var packet = MessageSerializer.ToPacket(message, optionBuilder.GetBytes());
 
             await this.SendReply(packet).ConfigureAwait(false);
                  
@@ -290,8 +294,7 @@ namespace DHCPSharp
             optionBuilder.AddOption(DhcpOptionCode.Router, Configuration.Gateway);
             optionBuilder.AddOption(DhcpOptionCode.AddressTime, Configuration.LeaseTimeSeconds, true);
 
-            var s = new DhcpMessageSerializer();
-            var packet = s.ToPacket(message, optionBuilder.GetBytes());
+            var packet = MessageSerializer.ToPacket(message, optionBuilder.GetBytes());
 
             await this.SendReply(packet).ConfigureAwait(false);
 
@@ -309,8 +312,7 @@ namespace DHCPSharp
             var optionBuilder = new DhcpOptionBuilder();
             optionBuilder.AddOption(DhcpOptionCode.DhcpMessageType,DhcpMessageType.Nak);
 
-            var s = new DhcpMessageSerializer();
-            var packet = s.ToPacket(message, optionBuilder.GetBytes());
+            var packet = MessageSerializer.ToPacket(message, optionBuilder.GetBytes());
 
             await this.SendReply(packet).ConfigureAwait(false);
 
@@ -321,7 +323,7 @@ namespace DHCPSharp
         {
             try
             {
-                var response = packet.GetBytes(new DhcpPacketSerializer());
+                var response = packet.GetBytes(PacketSerializer);
                 using (UdpClient client = new UdpClient())
                 {
                     IPEndPoint endPoint = new IPEndPoint(IPAddress.Broadcast, DHCP_CLIENT_PORT);

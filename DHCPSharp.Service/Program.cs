@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DHCPSharp.Common;
 using DHCPSharp.Common.Loggers;
+using DHCPSharp.Common.Serialization;
 using DHCPSharp.DAL;
 using DHCPSharp.DAL.Models;
 using DHCPSharp.DAL.Repository;
@@ -63,6 +64,8 @@ namespace DHCPSharp
             container.Register<ILeaseRepo, LeaseRepo>();
             container.Register<ILogger, ConsoleLogger>();
             container.Register<ILeaseManager, LeaseManager>();
+            container.Register<IDhcpMessageSerializer, DhcpMessageSerializer>();
+            container.Register<IDhcpPacketSerializer, DhcpPacketSerializer>();
             container.Register<LeaseCleanup>();
 
             // Optionally verify the container.

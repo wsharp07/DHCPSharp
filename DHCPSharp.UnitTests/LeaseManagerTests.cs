@@ -41,7 +41,7 @@ namespace DHCPSharp.UnitTests
             var leaseManager = new LeaseManager(DhcpFakes.FakeDhcpConfiguration(), leaseRepo);
 
             var lease = ModelFakes.GetFakeLease(config.StartIpAddress.ToString());
-            await leaseRepo.Insert(lease);
+            await leaseRepo.Insert(lease).ConfigureAwait(false);
 
             var nextLease = await leaseManager.GetNextLease();
 
@@ -55,7 +55,7 @@ namespace DHCPSharp.UnitTests
             var leaseRepo = new LeaseRepo(_conn);
             var leaseManager = new LeaseManager(config, leaseRepo);
 
-            var nextLease = await leaseManager.GetNextLease();
+            var nextLease = await leaseManager.GetNextLease().ConfigureAwait(false);
 
             Assert.Equal(config.StartIpAddress, nextLease);
         }
@@ -70,9 +70,9 @@ namespace DHCPSharp.UnitTests
             var hostName = "myserver.local";
             var physicalAddress = PhysicalAddress.Parse("000000000000");
 
-            await leaseManager.AddLease(ipAddress, physicalAddress, hostName);
+            await leaseManager.AddLease(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
 
-            var entity = await leaseRepo.GetByIpAddress(ipAddress);
+            var entity = await leaseRepo.GetByIpAddress(ipAddress).ConfigureAwait(false);
 
             Assert.Equal(ipAddress.ToString(), entity.IpAddress);
             Assert.Equal(physicalAddress.ToString(), entity.PhysicalAddress);
@@ -89,10 +89,10 @@ namespace DHCPSharp.UnitTests
             var hostName = "myserver.local";
             var physicalAddress = PhysicalAddress.Parse("000000000000");
 
-            await leaseManager.AddLease(ipAddress, physicalAddress, hostName);
-            await leaseManager.RemoveLease(ipAddress);
+            await leaseManager.AddLease(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
+            await leaseManager.RemoveLease(ipAddress).ConfigureAwait(false);
 
-            var entity = await leaseRepo.GetByIpAddress(ipAddress);
+            var entity = await leaseRepo.GetByIpAddress(ipAddress).ConfigureAwait(false);
 
             Assert.Null(entity);
         }
@@ -107,9 +107,9 @@ namespace DHCPSharp.UnitTests
             var hostName = "myserver.local";
             var physicalAddress = PhysicalAddress.Parse("000000000000");
 
-            await leaseManager.AddLease(ipAddress, physicalAddress, hostName);
+            await leaseManager.AddLease(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
 
-            var keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress, hostName);
+            var keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
 
             Assert.True(keepLeaseResponse);
         }
@@ -124,7 +124,7 @@ namespace DHCPSharp.UnitTests
             var hostName = "myserver.local";
             var physicalAddress = PhysicalAddress.Parse("000000000000");
 
-            bool keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress, hostName);
+            bool keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
 
             Assert.True(keepLeaseResponse);
         }
@@ -140,9 +140,9 @@ namespace DHCPSharp.UnitTests
             var physicalAddress = PhysicalAddress.Parse("000000000000");
             var physicalAddress2 = PhysicalAddress.Parse("999999999999");
 
-            await leaseManager.AddLease(ipAddress, physicalAddress, hostName);
+            await leaseManager.AddLease(ipAddress, physicalAddress, hostName).ConfigureAwait(false);
 
-            var keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress2, hostName);
+            var keepLeaseResponse = await leaseManager.KeepLeaseRequest(ipAddress, physicalAddress2, hostName).ConfigureAwait(false);
 
             Assert.False(keepLeaseResponse);
         }
@@ -161,13 +161,13 @@ namespace DHCPSharp.UnitTests
             validLease.PhysicalAddress = "332211556677";
             validLease.HostName = "boot22.local";
 
-            await leaseRepo.Insert(expiredLease);
-            await leaseRepo.Insert(validLease);
+            await leaseRepo.Insert(expiredLease).ConfigureAwait(false);
+            await leaseRepo.Insert(validLease).ConfigureAwait(false);
 
             await leaseManager.CleanExpiredLeases();
 
-            var expiredEntity = await leaseRepo.GetByIpAddress(expiredLease.IpAddress);
-            var validEntity = await leaseRepo.GetByIpAddress(validLease.IpAddress);
+            var expiredEntity = await leaseRepo.GetByIpAddress(expiredLease.IpAddress).ConfigureAwait(false);
+            var validEntity = await leaseRepo.GetByIpAddress(validLease.IpAddress).ConfigureAwait(false);
 
             Assert.Null(expiredEntity);
             Assert.NotNull(validEntity);
@@ -180,7 +180,7 @@ namespace DHCPSharp.UnitTests
 
         private async void CreateTables()
         {
-            await _conn.CreateTableAsync<Lease>();
+            await _conn.CreateTableAsync<Lease>().ConfigureAwait(false);
         }
     }
 }

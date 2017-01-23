@@ -11,11 +11,6 @@ namespace DHCPSharp.Common
     {
         public IPEndPoint Source { get; }
         public byte[] MessageBuffer { get; }
-        public DhcpData(byte[] messageBuffer)
-        {
-            MessageBuffer = messageBuffer;
-        }
-
         public DhcpData(IPEndPoint source, byte[] messageBuffer)
         {
             MessageBuffer = messageBuffer;

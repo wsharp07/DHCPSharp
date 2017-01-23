@@ -21,7 +21,7 @@ namespace DHCPSharp.DAL
             db.Table<T>();
 
         public async Task<List<T>> Get() =>
-            await db.Table<T>().ToListAsync();
+            await db.Table<T>().ToListAsync().ConfigureAwait(false);
 
         public async Task<List<T>> Get<TValue>(Expression<Func<T, bool>> predicate = null, Expression<Func<T, TValue>> orderBy = null)
         {
@@ -33,22 +33,22 @@ namespace DHCPSharp.DAL
             if (orderBy != null)
                 query = query.OrderBy<TValue>(orderBy);
 
-            return await query.ToListAsync();
+            return await query.ToListAsync().ConfigureAwait(false);
         }
 
         public async Task<T> Get(int id) =>
-             await db.FindAsync<T>(id);
+             await db.FindAsync<T>(id).ConfigureAwait(false);
 
         public async Task<T> Get(Expression<Func<T, bool>> predicate) =>
-            await db.FindAsync<T>(predicate);
+            await db.FindAsync<T>(predicate).ConfigureAwait(false);
 
         public async Task<int> Insert(T entity) =>
-             await db.InsertAsync(entity);
+             await db.InsertAsync(entity).ConfigureAwait(false);
 
         public async Task<int> Update(T entity) =>
-             await db.UpdateAsync(entity);
+             await db.UpdateAsync(entity).ConfigureAwait(false);
 
         public async Task<int> Delete(T entity) =>
-             await db.DeleteAsync(entity);
+             await db.DeleteAsync(entity).ConfigureAwait(false);
     }
 }
